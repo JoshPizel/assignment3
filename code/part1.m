@@ -22,6 +22,7 @@ Temp = 300; %Given in kelvin
 rTime=10000; %run time in timesteps
 MTBC = 0.2e-12;
 Vleft = 0.1;%voltage of left side
+electronConc = 10e15;
 
 %thermal velocity
 Vth = sqrt(2*C.kb*Temp/mn);
@@ -30,6 +31,7 @@ Vth = sqrt(2*C.kb*Temp/mn);
 %working area 200nm x 100nm
 workX=200*10^-9;
 workY=100*10^-9;
+area =workX*workY;
 
 size=1000;
 displaySize=10;
@@ -44,17 +46,9 @@ Ypos(1,:)= Y(1,:)*workY;
 colour = rand(1,displaySize);
 
 % for normal distribution of velocity
-sigma =sqrt(C.kb*Temp/mn);
-mu = Vth/sqrt(2);
-MBdist = makedist('Normal',mu,sigma);
-Xvel = zeros(1,size);
-Yvel = zeros(1,size);
-for i=1:1:size
-    vel = random(MBdist);
-    Xvel(1,i) = vel;
-    vel = random(MBdist);
-    Yvel(1,i) = vel;
-end
+Vthn = Vth/sqrt(2);
+Xvel = Vthn*randn(1,size);
+Yvel = Vthn*randn(1,size);
 
 %set timestep of function
 spacStep = 0.01*workY;
@@ -73,18 +67,22 @@ MFPcount = zeros(1,size);
 Efield = Vleft/workX;
 force = Efield*C.q_0;
 acceleration = force/mn;
-accelVelocity = acceleration*dt;
+accelVelocity = acceleration*(dt^2);
 
 figure(1)
+currentHistory = zeros(1,steps);
 %main function
 for i = 1:1:steps
+    
+    %accelerate velocities
+    Xvel(:,:) = Xvel(:,:) + accelVelocity;
     
     %scattering  
     scattered=rand(1,size);
     scatterCheck = scattered<=Pscat;
-    velocity = (Vth/sqrt(2)).*randn(1,size);
+    velocity = Vthn*randn(1,size);
     Xvel(scatterCheck) = velocity(scatterCheck)*dt;
-    velocity = (Vth/sqrt(2)).*randn(1,size);
+    velocity = Vthn*randn(1,size);
     Yvel(scatterCheck) = velocity(scatterCheck)*dt;
     tvelocity = sqrt((Xvel/dt).^2 +(Yvel/dt).^2);
     MFPcount(~scatterCheck) = MFPcount(~scatterCheck)+spacStep;
@@ -113,20 +111,102 @@ for i = 1:1:steps
     %MFP calculation
     MFP = sum(MFPcount)/size;
     
-    %meanVel = sqrt(Ysum + Xsum);
-    %MTBCavg = MFP/meanVel;
+    %current tracking
+    avgVel=sum(tvelocity)/size;
+    mu = (avgVel)/Efield;
+    currentHistory(i) =C.q_0*electronConc*mu*Efield/area;
     
     %plotting here
     prevX(i,:) =Xpos(1,:);
     prevY(i,:) =Ypos(1,:);
-    for j = 1:1:displaySize
+%     for j = 1:1:displaySize
+%         plot(prevX(:,j),prevY(:,j),'color',[colour(1,j) 0 j/displaySize])
+%         
+%         xlim([0 workX])
+%         ylim([0 workY])
+%         hold on
+%         drawnow
+%     end
+end
+
+for j = 1:1:displaySize
         plot(prevX(:,j),prevY(:,j),'color',[colour(1,j) 0 j/displaySize])
         
         xlim([0 workX])
         ylim([0 workY])
-        legend(['Temperature:' num2str(averageTemp)])
         hold on
         drawnow
-    end
-    
 end
+hold off
+
+figure(2)
+plot(linspace(1,steps,steps),currentHistory)
+title('Current plot')
+xlabel('time step')
+ylabel('Current')
+
+%display for submission
+disp('Electric Field:')
+disp(Efield)
+disp('Force')
+disp(force)
+disp('Acceleration')
+disp(acceleration)
+
+disp('current = q*n*mu*E/area')
+%add comment of current over time
+
+%temperature maps
+resX=25;
+resY=25;
+Xedges = linspace(0,workX,resX);
+Yedges = linspace(0,workY,resY);
+
+Xbins=discretize(Xpos,Xedges);
+Ybins=discretize(Ypos,Yedges);
+
+binTemp=zeros(resX,resY);
+for k=1:1:resX %x
+    for L=1:1:resY %y
+        logicX = Xbins==k;
+        logicY = Ybins==L;
+        logic = logicX & logicY;
+        sumX=sum(Xvel(logic))/dt;
+        sumY=sum(Yvel(logic))/dt;
+        meanvel = sqrt((sumX)^2+(sumY)^2);
+        binTemp(k,L) = mn*(meanvel)^2/(2*C.kb);
+    end
+end
+figure(3)
+title('Temperature Map')
+surf(binTemp)
+xlim([1 resX])
+ylim([1 resY])
+colorbar;
+
+%Density map
+resX=25;
+resY=25;
+Xedges = linspace(0,workX,resX);
+Yedges = linspace(0,workY,resY);
+
+Xbins=discretize(Xpos,Xedges);
+Ybins=discretize(Ypos,Yedges);
+
+binDens=zeros(resX,resY);
+for k=1:1:resX %x
+    for L=1:1:resY %y
+        logicX = Xbins==k;
+        logicY = Ybins==L;
+        logic = logicX & logicY;
+        binDens(k,L) = sum(Xbins(logic))/k + sum(Ybins(logic))/L;
+    end
+end
+
+figure(4)
+title('Density Map')
+surf(binDens)
+xlim([1 resX])
+ylim([1 resY])
+colorbar;
+
