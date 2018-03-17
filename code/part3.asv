@@ -169,10 +169,10 @@ for i =1:1:squares
     end
 end
 
-[Ex,Ey] = gradient(Vmap);
+[Ex,Ey] = gradient(Vmap*10^6);
 
-forcex = Ex*C.q_0;
-forcey = Ey*C.q_0;
+forcex = -Ex*C.q_0;
+forcey = -Ey*C.q_0;
 accelerationX = forcex/mn;
 accelerationY = forcey/mn;
 accelVelocityX = accelerationX*(dt^2);
@@ -189,7 +189,7 @@ plot(boxplotX,boxplotY,'color',[0 0 0]);
 %main function
 for i = 1:1:steps
     
-    %accelerate velocities
+    %======================accelerate velocities===========================
     %determine which accelerations to use
     for L = 1:1:squares
         for W = 1:1:squares
@@ -202,7 +202,7 @@ for i = 1:1:steps
     end
 
     
-    %scattering  
+    %============================scattering================================  
     scattered=rand(1,size);
     scatterCheck = scattered<=Pscat;
     velocity = Vthn*randn(1,size);
@@ -212,19 +212,30 @@ for i = 1:1:steps
     tvelocity = sqrt((Xvel/dt).^2 +(Yvel/dt).^2);
     MFPcount(~scatterCheck) = MFPcount(~scatterCheck)+spacStep;
     
-    %bottle neck
+    %===========================bottle neck================================
+    %bottom box
     checkXboxLeftXreflect = (Xpos + Xvel)>(xbox(1)-spacStep);
     checkXboxRightXreflect= (Xpos + Xvel)<(xbox(2)+spacStep);
-    checkYboxbotXreflect  = (Ypos + Y
-    
+    checkYboxbotXreflect  = (Ypos + Yvel)>yboxbottom(1) &(Ypos + Yvel)<yboxbottom(2);
+    bottomBoxX = checkXboxLeftXreflect & checkXboxRightXreflect & checkYboxbotXreflect;
+    Xvel(bottomBoxX) = Xvel(bottomBoxX).*(-1);
     
     checkXboxLeftYreflect = (Xpos + Xvel)>xbox(1);
     checkXboxRightYreflect= (Xpos + Xvel)<xbox(2);
-    checkXboxXreflect = checkXboxLeftXreflect & checkXboxRightXreflect;
-    checkYboxBot = 1;
+    checkYboxbotYreflect  = (Ypos + Yvel)>yboxbottom(1) &(Ypos + Yvel)<(yboxbottom(2)+spacStep);
+    bottomBoxY = checkXboxLeftYreflect & checkXboxRightYreflect & checkYboxbotYreflect;
+    Yvel(bottomBoxY) = Yvel(bottomBoxY).*(-1);
     
+    %top box
+    checkYboxtopXreflect  = (Ypos + Yvel)>yboxtop(1) &(Ypos + Yvel)<yboxtop(2);
+    topBoxX = checkXboxLeftXreflect & checkXboxRightXreflect & checkYboxtopXreflect;
+    Xvel(topBoxX) = Xvel(topBoxX).*(-1);
     
-    %position advance
+    checkYboxtopYreflect  = (Ypos + Yvel)>(yboxtop(1)-spacStep) &(Ypos + Yvel)<yboxtop(2);
+    topBoxY = checkXboxLeftYreflect & checkXboxRightYreflect & checkYboxtopYreflect;
+    Yvel(topBoxY) = Yvel(topBoxY).*(-1);
+    
+    %=======================position advance===============================
     %logical indexing
     checkXright = Xpos +Xvel>2e-7;%right side period
     Xpos(checkXright) = Xpos(checkXright)+Xvel(checkXright)-workX;
@@ -241,7 +252,7 @@ for i = 1:1:steps
     Yvel(checkY) = Yvel(checkY).*(-1);
     Ypos(1,:) = Ypos(1,:)+Yvel(1,:);
     
-    %plotting here
+    %===========================plotting===================================
     prevX(i,:) =Xpos(1,:);
     prevY(i,:) =Ypos(1,:);
 %     for j = 1:1:displaySize
@@ -262,11 +273,14 @@ for j = 1:1:displaySize
     hold on
     drawnow
 end
+title('Plot of particle trajectories'),xlabel('X'),ylabel('Y')
 
+figure(8)
+n=hist3([Xpos',Ypos'],[50,50]);
+view(25,17)
+title('Electron Density Map')
 
-
-
-
+display('part3(c): The next step of this program, to make it more accurate, is to 
 
 
 
