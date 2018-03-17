@@ -2,7 +2,6 @@
 
 clearvars
 clearvars -GLOBAL
-close all
 
 global C
 global X Y
@@ -273,7 +272,7 @@ for j = 1:1:displaySize
     hold on
     drawnow
 end
-title('Plot of particle trajectories'),xlabel('X'),ylabel('Y')
+title('Plot of particle trajectories with bottleneck'),xlabel('X'),ylabel('Y')
 
 figure(8)
 hist3([Xpos',Ypos'],[50,50]);

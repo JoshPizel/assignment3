@@ -137,6 +137,7 @@ for j = 1:1:displaySize
         hold on
         drawnow
 end
+title('Plot of particle trajectories'),xlabel('X'),ylabel('Y')
 hold off
 
 figure(2)
@@ -178,10 +179,10 @@ for k=1:1:resX %x
     end
 end
 figure(3)
-title('Temperature Map')
 surf(binTemp)
 xlim([1 resX])
 ylim([1 resY])
+title('Temperature Map')
 colorbar;
 
 %Density map
@@ -204,8 +205,8 @@ for k=1:1:resX %x
 end
 
 figure(4)
-title('Density Map')
 surf(binDens)
+title('Density Map')
 xlim([1 resX])
 ylim([1 resY])
 colorbar;
